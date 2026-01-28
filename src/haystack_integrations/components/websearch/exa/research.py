@@ -69,7 +69,7 @@ class ExaResearch:
         retry=retry_if_exception_type((requests.Timeout, requests.ConnectionError)),
     )
     def _create_research(self, headers: dict[str, Any], payload: dict[str, Any]) -> requests.Response:
-        response = requests.post("https://api.exa.ai/research", headers=headers, json=payload, timeout=30)
+        response = requests.post("https://api.exa.ai/research/v1", headers=headers, json=payload, timeout=30)
         response.raise_for_status()
         return response
 
@@ -80,11 +80,11 @@ class ExaResearch:
         retry=retry_if_exception_type((requests.Timeout, requests.ConnectionError)),
     )
     def _get_research(self, headers: dict[str, Any], research_id: str) -> requests.Response:
-        response = requests.get(f"https://api.exa.ai/research/{research_id}", headers=headers, timeout=30)
+        response = requests.get(f"https://api.exa.ai/research/v1/{research_id}", headers=headers, timeout=30)
         response.raise_for_status()
         return response
 
-    @component.output_types(report=str, sources=list[Document], status=str, operations=list[dict[str, Any]])
+    @component.output_types(report=str, sources=list[Document], status=str, events=list[dict[str, Any]])
     def run(self, instructions: str) -> dict[str, str | list[Document] | list[dict[str, Any]]]:
         headers = {"x-api-key": self.api_key.resolve_value(), "Content-Type": "application/json"}
         payload: dict[str, Any] = {
@@ -102,7 +102,7 @@ class ExaResearch:
             raise ExaError(f"An error occurred while creating ExaResearch: {e}") from e
 
         data = response.json()
-        research_id = data.get("id")
+        research_id = data.get("researchId")
         if not research_id:
             raise ExaError("No research ID returned from API")
 
@@ -135,23 +135,22 @@ class ExaResearch:
             )
             time.sleep(self.poll_interval)
 
-        report = data.get("output", "")
-        operations = data.get("operations", [])
+        output_data = data.get("output", {})
+        report = output_data.get("content", "") if isinstance(output_data, dict) else str(output_data)
+        events = data.get("events", [])
 
         sources: list[Document] = []
-        for op in operations:
-            if op.get("type") == "search" and "results" in op:
-                for result in op["results"]:
-                    meta: dict[str, Any] = {
-                        "title": result.get("title", ""),
-                        "url": result.get("url", ""),
-                        "id": result.get("id"),
-                        "score": result.get("score"),
-                        "published_date": result.get("publishedDate"),
-                        "author": result.get("author"),
-                    }
-                    doc = Document(content=result.get("text", result.get("title", "")), meta=meta)
-                    sources.append(doc)
+        for event in events:
+            if event.get("eventType") in ("task-operation", "plan-operation"):
+                op = event.get("data", {})
+                if op.get("type") == "search" and "results" in op:
+                    for result in op["results"]:
+                        meta: dict[str, Any] = {
+                            "title": result.get("title", ""),
+                            "url": result.get("url", ""),
+                        }
+                        doc = Document(content=result.get("url", ""), meta=meta)
+                        sources.append(doc)
 
         logger.debug("ExaResearch completed with {source_count} sources", source_count=len(sources))
-        return {"report": report, "sources": sources, "status": status, "operations": operations}
+        return {"report": report, "sources": sources, "status": status, "events": events}

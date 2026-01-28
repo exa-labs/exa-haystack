@@ -378,25 +378,27 @@ class TestExaResearch:
     @patch("haystack_integrations.components.websearch.exa.research.requests.post")
     def test_run_success(self, mock_post, mock_get, mock_sleep):
         mock_create_response = MagicMock()
-        mock_create_response.json.return_value = {"id": "research-123"}
+        mock_create_response.json.return_value = {"researchId": "research-123"}
         mock_create_response.raise_for_status = MagicMock()
         mock_post.return_value = mock_create_response
 
         mock_status_response = MagicMock()
         mock_status_response.json.return_value = {
-            "id": "research-123",
+            "researchId": "research-123",
             "status": "completed",
-            "output": "Research report content...",
-            "operations": [
+            "output": {"content": "Research report content..."},
+            "events": [
                 {
-                    "type": "search",
-                    "results": [
-                        {
-                            "title": "Research Source",
-                            "url": "https://example.com/research",
-                            "text": "Research content.",
-                        }
-                    ],
+                    "eventType": "task-operation",
+                    "data": {
+                        "type": "search",
+                        "results": [
+                            {
+                                "title": "Research Source",
+                                "url": "https://example.com/research",
+                            }
+                        ],
+                    },
                 }
             ],
         }
@@ -409,5 +411,4 @@ class TestExaResearch:
         assert result["report"] == "Research report content..."
         assert result["status"] == "completed"
         assert len(result["sources"]) == 1
-        assert result["sources"][0].content == "Research content."
         assert result["sources"][0].meta["url"] == "https://example.com/research"

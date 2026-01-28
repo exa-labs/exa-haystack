@@ -21,10 +21,13 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
 ]
 dependencies = [
     "haystack-ai>=2.0.0",
     "requests>=2.25.0",
+    "tenacity>=8.0.0",
 ]
 
 [project.optional-dependencies]

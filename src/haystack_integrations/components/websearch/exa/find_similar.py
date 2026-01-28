@@ -1,11 +1,18 @@
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 from typing import Any
 
 import requests
-from haystack import component, default_from_dict, default_to_dict
+from haystack import component, default_from_dict, default_to_dict, logging
 from haystack.dataclasses import Document
 from haystack.utils import Secret, deserialize_secrets_inplace
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
+
+from haystack_integrations.components.websearch.exa.errors import ExaError
+
+logger = logging.getLogger(__name__)
 
 
 @component
@@ -48,6 +55,17 @@ class ExaFindSimilar:
         deserialize_secrets_inplace(data["init_parameters"], keys=["api_key"])
         return default_from_dict(cls, data)
 
+    @retry(
+        reraise=True,
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception_type((requests.Timeout, requests.ConnectionError)),
+    )
+    def _make_request(self, headers: dict[str, Any], payload: dict[str, Any]) -> requests.Response:
+        response = requests.post("https://api.exa.ai/findSimilar", headers=headers, json=payload, timeout=30)
+        response.raise_for_status()
+        return response
+
     @component.output_types(documents=list[Document], links=list[str])
     def run(self, url: str) -> dict[str, list[Document] | list[str]]:
         headers = {"x-api-key": self.api_key.resolve_value(), "Content-Type": "application/json"}
@@ -60,8 +78,13 @@ class ExaFindSimilar:
         if self.exclude_domains:
             payload["excludeDomains"] = self.exclude_domains
 
-        response = requests.post("https://api.exa.ai/findSimilar", headers=headers, json=payload, timeout=30)
-        response.raise_for_status()
+        try:
+            response = self._make_request(headers, payload)
+        except requests.Timeout as e:
+            raise TimeoutError("Request to ExaFindSimilar timed out.") from e
+        except requests.RequestException as e:
+            raise ExaError(f"An error occurred while querying ExaFindSimilar: {e}") from e
+
         data = response.json()
 
         documents = []
@@ -80,4 +103,5 @@ class ExaFindSimilar:
             documents.append(doc)
             links.append(result.get("url", ""))
 
+        logger.debug("ExaFindSimilar returned {count} documents for url '{url}'", count=len(documents), url=url)
         return {"documents": documents, "links": links}

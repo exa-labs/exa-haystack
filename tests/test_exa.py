@@ -5,7 +5,14 @@ from unittest.mock import MagicMock, patch
 
 from haystack.utils import Secret
 
-from haystack_integrations.components.websearch.exa import ExaContents, ExaFindSimilar, ExaWebSearch
+from haystack_integrations.components.websearch.exa import (
+    ExaAnswer,
+    ExaContents,
+    ExaFindSimilar,
+    ExaResearch,
+    ExaStreamAnswer,
+    ExaWebSearch,
+)
 
 
 class TestExaWebSearch:
@@ -177,8 +184,8 @@ class TestExaContents:
         with patch.dict(os.environ, {"EXA_API_KEY": "test-key"}):
             component = ExaContents()
             assert component.text is True
-            assert component.highlights is False
-            assert component.summary is False
+            assert component.highlights is None
+            assert component.summary is None
 
     def test_init_custom(self):
         component = ExaContents(
@@ -270,3 +277,137 @@ class TestExaContents:
 
         assert len(result["documents"]) == 1
         assert result["documents"][0].content == "Highlight 1 ... Highlight 2"
+
+
+class TestExaAnswer:
+    def test_init_default(self):
+        with patch.dict(os.environ, {"EXA_API_KEY": "test-key"}):
+            component = ExaAnswer()
+            assert component.model == "exa"
+            assert component.text is True
+            assert component.system_prompt is None
+
+    def test_init_custom(self):
+        component = ExaAnswer(
+            api_key=Secret.from_token("custom-key"),
+            model="exa-pro",
+            system_prompt="You are a helpful assistant.",
+        )
+        assert component.model == "exa-pro"
+        assert component.system_prompt == "You are a helpful assistant."
+
+    def test_to_dict(self):
+        with patch.dict(os.environ, {"EXA_API_KEY": "test-key"}):
+            component = ExaAnswer(model="exa-pro")
+            data = component.to_dict()
+            assert data["type"] == "haystack_integrations.components.websearch.exa.answer.ExaAnswer"
+            assert data["init_parameters"]["model"] == "exa-pro"
+
+    @patch("haystack_integrations.components.websearch.exa.answer.requests.post")
+    def test_run_success(self, mock_post):
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "answer": "The answer to your question is...",
+            "citations": [
+                {
+                    "title": "Source Article",
+                    "url": "https://example.com/source",
+                    "text": "Source content.",
+                    "score": 0.9,
+                }
+            ],
+        }
+        mock_response.raise_for_status = MagicMock()
+        mock_post.return_value = mock_response
+
+        component = ExaAnswer(api_key=Secret.from_token("test-key"))
+        result = component.run(query="What is AI?")
+
+        assert result["answer"] == "The answer to your question is..."
+        assert len(result["citations"]) == 1
+        assert result["citations"][0].content == "Source content."
+        assert result["citations"][0].meta["url"] == "https://example.com/source"
+
+
+class TestExaStreamAnswer:
+    def test_init_default(self):
+        with patch.dict(os.environ, {"EXA_API_KEY": "test-key"}):
+            component = ExaStreamAnswer()
+            assert component.model == "exa"
+            assert component.text is True
+
+    def test_to_dict(self):
+        with patch.dict(os.environ, {"EXA_API_KEY": "test-key"}):
+            component = ExaStreamAnswer(model="exa-pro")
+            data = component.to_dict()
+            assert data["type"] == "haystack_integrations.components.websearch.exa.answer.ExaStreamAnswer"
+            assert data["init_parameters"]["model"] == "exa-pro"
+
+
+class TestExaResearch:
+    def test_init_default(self):
+        with patch.dict(os.environ, {"EXA_API_KEY": "test-key"}):
+            component = ExaResearch()
+            assert component.model == "exa-research"
+            assert component.output_schema is None
+            assert component.poll_interval == 5
+            assert component.max_wait_time == 600
+
+    def test_init_custom(self):
+        component = ExaResearch(
+            api_key=Secret.from_token("custom-key"),
+            model="exa-research-pro",
+            output_schema={"type": "object"},
+            poll_interval=10,
+            max_wait_time=1200,
+        )
+        assert component.model == "exa-research-pro"
+        assert component.output_schema == {"type": "object"}
+        assert component.poll_interval == 10
+        assert component.max_wait_time == 1200
+
+    def test_to_dict(self):
+        with patch.dict(os.environ, {"EXA_API_KEY": "test-key"}):
+            component = ExaResearch(model="exa-research-fast")
+            data = component.to_dict()
+            assert data["type"] == "haystack_integrations.components.websearch.exa.research.ExaResearch"
+            assert data["init_parameters"]["model"] == "exa-research-fast"
+
+    @patch("haystack_integrations.components.websearch.exa.research.time.sleep")
+    @patch("haystack_integrations.components.websearch.exa.research.requests.get")
+    @patch("haystack_integrations.components.websearch.exa.research.requests.post")
+    def test_run_success(self, mock_post, mock_get, mock_sleep):
+        mock_create_response = MagicMock()
+        mock_create_response.json.return_value = {"id": "research-123"}
+        mock_create_response.raise_for_status = MagicMock()
+        mock_post.return_value = mock_create_response
+
+        mock_status_response = MagicMock()
+        mock_status_response.json.return_value = {
+            "id": "research-123",
+            "status": "completed",
+            "output": "Research report content...",
+            "operations": [
+                {
+                    "type": "search",
+                    "results": [
+                        {
+                            "title": "Research Source",
+                            "url": "https://example.com/research",
+                            "text": "Research content.",
+                        }
+                    ],
+                }
+            ],
+        }
+        mock_status_response.raise_for_status = MagicMock()
+        mock_get.return_value = mock_status_response
+
+        component = ExaResearch(api_key=Secret.from_token("test-key"))
+        result = component.run(instructions="Research quantum computing")
+
+        assert result["report"] == "Research report content..."
+        assert result["status"] == "completed"
+        assert len(result["sources"]) == 1
+        assert result["sources"][0].content == "Research content."
+        assert result["sources"][0].meta["url"] == "https://example.com/research"

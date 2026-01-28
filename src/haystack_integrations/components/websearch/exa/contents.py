@@ -59,7 +59,7 @@ class ExaContents:
         wait=wait_exponential(multiplier=1, min=2, max=10),
         retry=retry_if_exception_type((requests.Timeout, requests.ConnectionError)),
     )
-    def _make_request(self, headers: dict[str, str], payload: dict[str, Any]) -> requests.Response:
+    def _make_request(self, headers: dict[str, Any], payload: dict[str, Any]) -> requests.Response:
         response = requests.post("https://api.exa.ai/contents", headers=headers, json=payload, timeout=30)
         response.raise_for_status()
         return response

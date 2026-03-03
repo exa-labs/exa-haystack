@@ -123,7 +123,11 @@ class ExaFindSimilar:
 
     @component.output_types(documents=list[Document], links=list[str])
     def run(self, url: str) -> dict[str, list[Document] | list[str]]:
-        headers = {"x-api-key": self.api_key.resolve_value(), "Content-Type": "application/json"}
+        headers = {
+            "x-api-key": self.api_key.resolve_value(),
+            "Content-Type": "application/json",
+            "x-exa-integration": "exa-haystack",
+        }
         payload: dict[str, Any] = {
             "url": url,
             "numResults": self.num_results,

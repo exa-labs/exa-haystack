@@ -91,7 +91,11 @@ class ExaContents:
 
     @component.output_types(documents=list[Document])
     def run(self, urls: list[str]) -> dict[str, list[Document]]:
-        headers = {"x-api-key": self.api_key.resolve_value(), "Content-Type": "application/json"}
+        headers = {
+            "x-api-key": self.api_key.resolve_value(),
+            "Content-Type": "application/json",
+            "x-exa-integration": "exa-haystack",
+        }
         payload: dict[str, Any] = {"ids": urls}
 
         if self.text is not None:

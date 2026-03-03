@@ -137,7 +137,11 @@ class ExaWebSearch:
 
     @component.output_types(documents=list[Document], links=list[str])
     def run(self, query: str) -> dict[str, list[Document] | list[str]]:
-        headers = {"x-api-key": self.api_key.resolve_value(), "Content-Type": "application/json"}
+        headers = {
+            "x-api-key": self.api_key.resolve_value(),
+            "Content-Type": "application/json",
+            "x-exa-integration": "exa-haystack",
+        }
         payload: dict[str, Any] = {
             "query": query,
             "numResults": self.num_results,

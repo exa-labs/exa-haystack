@@ -86,7 +86,11 @@ class ExaResearch:
 
     @component.output_types(report=str, sources=list[Document], status=str, events=list[dict[str, Any]])
     def run(self, instructions: str) -> dict[str, str | list[Document] | list[dict[str, Any]]]:
-        headers = {"x-api-key": self.api_key.resolve_value(), "Content-Type": "application/json"}
+        headers = {
+            "x-api-key": self.api_key.resolve_value(),
+            "Content-Type": "application/json",
+            "x-exa-integration": "exa-haystack",
+        }
         payload: dict[str, Any] = {
             "instructions": instructions,
             "model": self.model,

@@ -73,7 +73,11 @@ class ExaAnswer:
 
     @component.output_types(answer=str, citations=list[Document])
     def run(self, query: str) -> dict[str, str | list[Document]]:
-        headers = {"x-api-key": self.api_key.resolve_value(), "Content-Type": "application/json"}
+        headers = {
+            "x-api-key": self.api_key.resolve_value(),
+            "Content-Type": "application/json",
+            "x-exa-integration": "exa-haystack",
+        }
         payload: dict[str, Any] = {
             "query": query,
             "model": self.model,
@@ -167,7 +171,11 @@ class ExaStreamAnswer:
 
     @component.output_types(stream=Generator[str, None, None], citations=list[Document])
     def run(self, query: str) -> dict[str, Generator[str, None, None] | list[Document]]:
-        headers = {"x-api-key": self.api_key.resolve_value(), "Content-Type": "application/json"}
+        headers = {
+            "x-api-key": self.api_key.resolve_value(),
+            "Content-Type": "application/json",
+            "x-exa-integration": "exa-haystack",
+        }
         payload: dict[str, Any] = {
             "query": query,
             "model": self.model,

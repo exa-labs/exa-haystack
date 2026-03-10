@@ -140,8 +140,8 @@ class ExaWebSearch:
         response.raise_for_status()
         return response
 
-    @component.output_types(documents=list[Document], links=list[str])
-    def run(self, query: str) -> dict[str, list[Document] | list[str]]:
+    @component.output_types(documents=list[Document], links=list[str], deep_output=dict[str, Any] | None)
+    def run(self, query: str) -> dict[str, list[Document] | list[str] | dict[str, Any] | None]:
         headers = {
             "x-api-key": self.api_key.resolve_value(),
             "Content-Type": "application/json",
@@ -238,16 +238,9 @@ class ExaWebSearch:
             if result.get("entities"):
                 meta["entities"] = result.get("entities")
 
-            # Attach deep search synthesized output to the first document
-            if idx == 0 and deep_output:
-                if deep_output.get("content"):
-                    meta["deep_output"] = deep_output["content"]
-                if deep_output.get("grounding"):
-                    meta["deep_grounding"] = deep_output["grounding"]
-
             doc = Document(content=content, meta=meta)
             documents.append(doc)
             links.append(result.get("url", ""))
 
         logger.debug("ExaWebSearch returned {count} documents for query '{query}'", count=len(documents), query=query)
-        return {"documents": documents, "links": links}
+        return {"documents": documents, "links": links, "deep_output": deep_output}

@@ -20,7 +20,6 @@ class TestExaWebSearch:
         with patch.dict(os.environ, {"EXA_API_KEY": "test-key"}):
             component = ExaWebSearch()
             assert component.num_results == 10
-            assert component.use_autoprompt is True
             assert component.type == "auto"
             assert component.include_domains is None
             assert component.exclude_domains is None
@@ -29,7 +28,6 @@ class TestExaWebSearch:
         component = ExaWebSearch(
             api_key=Secret.from_token("custom-key"),
             num_results=5,
-            use_autoprompt=False,
             type="neural",
             include_domains=["example.com"],
             exclude_domains=["spam.com"],
@@ -38,7 +36,6 @@ class TestExaWebSearch:
             category="news",
         )
         assert component.num_results == 5
-        assert component.use_autoprompt is False
         assert component.type == "neural"
         assert component.include_domains == ["example.com"]
         assert component.exclude_domains == ["spam.com"]
@@ -50,14 +47,12 @@ class TestExaWebSearch:
         with patch.dict(os.environ, {"EXA_API_KEY": "test-key"}):
             component = ExaWebSearch(
                 num_results=5,
-                use_autoprompt=False,
-                type="keyword",
+                type="fast",
             )
             data = component.to_dict()
             assert data["type"] == "haystack_integrations.components.websearch.exa.search.ExaWebSearch"
             assert data["init_parameters"]["num_results"] == 5
-            assert data["init_parameters"]["use_autoprompt"] is False
-            assert data["init_parameters"]["type"] == "keyword"
+            assert data["init_parameters"]["type"] == "fast"
 
     def test_from_dict(self):
         data = {
@@ -65,7 +60,6 @@ class TestExaWebSearch:
             "init_parameters": {
                 "api_key": {"type": "env_var", "env_vars": ["EXA_API_KEY"], "strict": True},
                 "num_results": 3,
-                "use_autoprompt": True,
                 "type": "auto",
                 "include_domains": None,
                 "exclude_domains": None,
@@ -76,7 +70,6 @@ class TestExaWebSearch:
         }
         component = ExaWebSearch.from_dict(data)
         assert component.num_results == 3
-        assert component.use_autoprompt is True
 
     @patch("haystack_integrations.components.websearch.exa.search.requests.post")
     def test_run_success(self, mock_post):

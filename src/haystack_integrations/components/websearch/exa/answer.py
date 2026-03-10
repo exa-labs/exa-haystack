@@ -38,12 +38,14 @@ class ExaAnswer:
         text: bool | dict[str, Any] | None = True,
         system_prompt: str | None = None,
         user_location: str | None = None,
+        output_schema: dict[str, Any] | None = None,
     ):
         self.api_key = api_key
         self.model = model
         self.text = text
         self.system_prompt = system_prompt
         self.user_location = user_location
+        self.output_schema = output_schema
 
     def to_dict(self) -> dict[str, Any]:
         return default_to_dict(
@@ -53,6 +55,7 @@ class ExaAnswer:
             text=self.text,
             system_prompt=self.system_prompt,
             user_location=self.user_location,
+            output_schema=self.output_schema,
         )
 
     @classmethod
@@ -88,6 +91,8 @@ class ExaAnswer:
             payload["systemPrompt"] = self.system_prompt
         if self.user_location:
             payload["userLocation"] = self.user_location
+        if self.output_schema:
+            payload["outputSchema"] = self.output_schema
 
         try:
             response = self._make_request(headers, payload)
@@ -147,12 +152,14 @@ class ExaStreamAnswer:
         text: bool | dict[str, Any] | None = True,
         system_prompt: str | None = None,
         user_location: str | None = None,
+        output_schema: dict[str, Any] | None = None,
     ):
         self.api_key = api_key
         self.model = model
         self.text = text
         self.system_prompt = system_prompt
         self.user_location = user_location
+        self.output_schema = output_schema
 
     def to_dict(self) -> dict[str, Any]:
         return default_to_dict(
@@ -162,6 +169,7 @@ class ExaStreamAnswer:
             text=self.text,
             system_prompt=self.system_prompt,
             user_location=self.user_location,
+            output_schema=self.output_schema,
         )
 
     @classmethod
@@ -187,6 +195,8 @@ class ExaStreamAnswer:
             payload["systemPrompt"] = self.system_prompt
         if self.user_location:
             payload["userLocation"] = self.user_location
+        if self.output_schema:
+            payload["outputSchema"] = self.output_schema
 
         try:
             response = requests.post(

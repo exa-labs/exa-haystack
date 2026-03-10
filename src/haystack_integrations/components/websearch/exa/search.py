@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any, Dict, List, Literal, Optional
 
 import requests
 from haystack import component, default_from_dict, default_to_dict, logging
@@ -25,7 +25,7 @@ Category = Literal[
     "people",
 ]
 
-SearchType = Literal["auto", "fast", "deep"]
+SearchType = Literal["auto", "neural", "fast", "deep", "deep-reasoning", "deep-max", "instant"]
 
 LivecrawlOption = Literal["always", "fallback", "never", "auto", "preferred"]
 
@@ -48,7 +48,6 @@ class ExaWebSearch:
         self,
         api_key: Secret = Secret.from_env_var("EXA_API_KEY"),
         num_results: int = 10,
-        use_autoprompt: bool = True,
         type: SearchType = "auto",
         include_domains: list[str] | None = None,
         exclude_domains: list[str] | None = None,
@@ -63,15 +62,16 @@ class ExaWebSearch:
         moderation: bool | None = None,
         user_location: str | None = None,
         additional_queries: list[str] | None = None,
+        output_schema: dict[str, Any] | None = None,
         text: bool | dict[str, Any] | None = None,
         highlights: bool | dict[str, Any] | None = None,
         summary: bool | dict[str, Any] | None = None,
         livecrawl: LivecrawlOption | None = None,
         livecrawl_timeout: int | None = None,
+        max_age_hours: int | None = None,
     ):
         self.api_key = api_key
         self.num_results = num_results
-        self.use_autoprompt = use_autoprompt
         self.type = type
         self.include_domains = include_domains
         self.exclude_domains = exclude_domains
@@ -86,18 +86,19 @@ class ExaWebSearch:
         self.moderation = moderation
         self.user_location = user_location
         self.additional_queries = additional_queries
+        self.output_schema = output_schema
         self.text = text
         self.highlights = highlights
         self.summary = summary
         self.livecrawl = livecrawl
         self.livecrawl_timeout = livecrawl_timeout
+        self.max_age_hours = max_age_hours
 
     def to_dict(self) -> dict[str, Any]:
         return default_to_dict(
             self,
             api_key=self.api_key.to_dict(),
             num_results=self.num_results,
-            use_autoprompt=self.use_autoprompt,
             type=self.type,
             include_domains=self.include_domains,
             exclude_domains=self.exclude_domains,
@@ -112,11 +113,13 @@ class ExaWebSearch:
             moderation=self.moderation,
             user_location=self.user_location,
             additional_queries=self.additional_queries,
+            output_schema=self.output_schema,
             text=self.text,
             highlights=self.highlights,
             summary=self.summary,
             livecrawl=self.livecrawl,
             livecrawl_timeout=self.livecrawl_timeout,
+            max_age_hours=self.max_age_hours,
         )
 
     @classmethod
@@ -135,8 +138,8 @@ class ExaWebSearch:
         response.raise_for_status()
         return response
 
-    @component.output_types(documents=list[Document], links=list[str])
-    def run(self, query: str) -> dict[str, list[Document] | list[str]]:
+    @component.output_types(documents=List[Document], links=List[str], deep_output=Optional[Dict[str, Any]])
+    def run(self, query: str) -> dict[str, list[Document] | list[str] | dict[str, Any] | None]:
         headers = {
             "x-api-key": self.api_key.resolve_value(),
             "Content-Type": "application/json",
@@ -145,7 +148,6 @@ class ExaWebSearch:
         payload: dict[str, Any] = {
             "query": query,
             "numResults": self.num_results,
-            "useAutoprompt": self.use_autoprompt,
             "type": self.type,
         }
         if self.include_domains:
@@ -174,6 +176,8 @@ class ExaWebSearch:
             payload["userLocation"] = self.user_location
         if self.additional_queries:
             payload["additionalQueries"] = self.additional_queries
+        if self.output_schema:
+            payload["outputSchema"] = self.output_schema
 
         contents: dict[str, Any] = {}
         if self.text is not None:
@@ -186,6 +190,8 @@ class ExaWebSearch:
             contents["livecrawl"] = self.livecrawl
         if self.livecrawl_timeout:
             contents["livecrawlTimeout"] = self.livecrawl_timeout
+        if self.max_age_hours is not None:
+            contents["maxAgeHours"] = self.max_age_hours
         if contents:
             payload["contents"] = contents
 
@@ -200,6 +206,10 @@ class ExaWebSearch:
 
         documents = []
         links = []
+
+        # Deep search synthesized output (returned for deep/deep-reasoning with outputSchema)
+        deep_output = data.get("output")
+
         for result in data.get("results", []):
             content = result.get("text", result.get("title", ""))
             meta: dict[str, Any] = {
@@ -230,4 +240,4 @@ class ExaWebSearch:
             links.append(result.get("url", ""))
 
         logger.debug("ExaWebSearch returned {count} documents for query '{query}'", count=len(documents), query=query)
-        return {"documents": documents, "links": links}
+        return {"documents": documents, "links": links, "deep_output": deep_output}

@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-03-10
+
+### Added
+
+- `output_schema` parameter on `ExaWebSearch` for structured deep search output (returned as `deep_output` component output)
+- `output_schema` parameter on `ExaAnswer` and `ExaStreamAnswer` for structured answer output
+- `max_age_hours` parameter on `ExaWebSearch`, `ExaFindSimilar`, and `ExaContents` for content freshness control
+- `instant`, `deep-reasoning`, and `deep-max` search types on `ExaWebSearch`
+- `neural` search type exposed in `SearchType` literal
+- `statuses` output on `ExaContents` with per-URL status/error information
+- Deep search synthesized output returned as `deep_output` component output (raw API output dict)
+
+### Removed
+
+- `use_autoprompt` parameter from `ExaWebSearch` (removed from Exa API)
+
+### Deprecated
+
+- `livecrawl` parameter — use `max_age_hours` instead (`0` = always livecrawl, `-1` = cache only)
+
 ## [1.0.0] - 2026-01-28
 
 ### Added

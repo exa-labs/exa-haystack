@@ -14,7 +14,7 @@ def example_web_search():
     """Basic web search example."""
     print("=== ExaWebSearch Example ===\n")
 
-    search = ExaWebSearch(num_results=3, use_autoprompt=True, type="auto")
+    search = ExaWebSearch(num_results=3, type="auto")
     results = search.run(query="latest developments in quantum computing")
 
     for doc in results["documents"]:

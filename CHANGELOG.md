@@ -9,13 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `output_schema` parameter on `ExaWebSearch` for structured deep search output (`deep_output` and `deep_grounding` in document metadata)
+- `output_schema` parameter on `ExaWebSearch` for structured deep search output (returned as `deep_output` component output)
 - `output_schema` parameter on `ExaAnswer` and `ExaStreamAnswer` for structured answer output
 - `max_age_hours` parameter on `ExaWebSearch`, `ExaFindSimilar`, and `ExaContents` for content freshness control
 - `instant`, `deep-reasoning`, and `deep-max` search types on `ExaWebSearch`
 - `neural` search type exposed in `SearchType` literal
 - `statuses` output on `ExaContents` with per-URL status/error information
-- Deep search synthesized output (`output.content`, `output.grounding`) parsed and attached to first document metadata
+- Deep search synthesized output returned as `deep_output` component output (raw API output dict)
 
 ### Removed
 

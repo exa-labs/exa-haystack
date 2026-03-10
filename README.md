@@ -129,7 +129,7 @@ Main search component using Exa's `/search` endpoint.
 - `start_published_date` / `end_published_date`: Date range filters (ISO format)
 - `category`: Search category filter (`"company"`, `"research paper"`, `"news"`, `"pdf"`, `"tweet"`, `"personal site"`, `"financial report"`, `"people"`)
 - `additional_queries`: Extra queries for deep search
-- `output_schema`: JSON schema for structured deep search output (returns `deep_output` and `deep_grounding` in document metadata)
+- `output_schema`: JSON schema for structured deep search output (returned as `deep_output` component output)
 - `max_age_hours`: Content freshness control (`0` = always livecrawl, `-1` = cache only, positive = max cache age in hours)
 - `livecrawl`: Legacy freshness option (deprecated, use `max_age_hours`)
 - `text` / `highlights` / `summary`: Content options (bool or dict with sub-options)

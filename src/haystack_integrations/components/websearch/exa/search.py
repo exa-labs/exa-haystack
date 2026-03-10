@@ -210,7 +210,7 @@ class ExaWebSearch:
         # Deep search synthesized output (returned for deep/deep-reasoning with outputSchema)
         deep_output = data.get("output")
 
-        for idx, result in enumerate(data.get("results", [])):
+        for result in data.get("results", []):
             content = result.get("text", result.get("title", ""))
             meta: dict[str, Any] = {
                 "title": result.get("title", ""),

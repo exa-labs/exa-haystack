@@ -124,11 +124,10 @@ Main search component using Exa's `/search` endpoint.
 **Parameters:**
 - `api_key`: Exa API key (default: from `EXA_API_KEY` env var)
 - `num_results`: Number of results to return (default: 10)
-- `use_autoprompt`: Enable Exa's autoprompt feature (default: True)
-- `type`: Search type — `"auto"`, `"neural"`, `"fast"`, `"deep"`, `"deep-reasoning"`, `"instant"` (default: `"auto"`)
+- `type`: Search type — `"auto"`, `"neural"`, `"fast"`, `"deep"`, `"deep-reasoning"`, `"deep-max"`, `"instant"` (default: `"auto"`)
 - `include_domains` / `exclude_domains`: Domain filters
 - `start_published_date` / `end_published_date`: Date range filters (ISO format)
-- `category`: Search category filter (`"company"`, `"research paper"`, `"news"`, `"tweet"`, `"personal site"`, `"financial report"`, `"people"`)
+- `category`: Search category filter (`"company"`, `"research paper"`, `"news"`, `"pdf"`, `"tweet"`, `"personal site"`, `"financial report"`, `"people"`)
 - `additional_queries`: Extra queries for deep search
 - `output_schema`: JSON schema for structured deep search output (returns `deep_output` and `deep_grounding` in document metadata)
 - `max_age_hours`: Content freshness control (`0` = always livecrawl, `-1` = cache only, positive = max cache age in hours)

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any, Dict, List, Literal, Optional
 
 import requests
 from haystack import component, default_from_dict, default_to_dict, logging
@@ -18,13 +18,14 @@ Category = Literal[
     "company",
     "research paper",
     "news",
+    "pdf",
     "tweet",
     "personal site",
     "financial report",
     "people",
 ]
 
-SearchType = Literal["auto", "neural", "fast", "deep", "deep-reasoning", "instant"]
+SearchType = Literal["auto", "neural", "fast", "deep", "deep-reasoning", "deep-max", "instant"]
 
 LivecrawlOption = Literal["always", "fallback", "never", "auto", "preferred"]
 
@@ -47,7 +48,6 @@ class ExaWebSearch:
         self,
         api_key: Secret = Secret.from_env_var("EXA_API_KEY"),
         num_results: int = 10,
-        use_autoprompt: bool = True,
         type: SearchType = "auto",
         include_domains: list[str] | None = None,
         exclude_domains: list[str] | None = None,
@@ -72,7 +72,6 @@ class ExaWebSearch:
     ):
         self.api_key = api_key
         self.num_results = num_results
-        self.use_autoprompt = use_autoprompt
         self.type = type
         self.include_domains = include_domains
         self.exclude_domains = exclude_domains
@@ -100,7 +99,6 @@ class ExaWebSearch:
             self,
             api_key=self.api_key.to_dict(),
             num_results=self.num_results,
-            use_autoprompt=self.use_autoprompt,
             type=self.type,
             include_domains=self.include_domains,
             exclude_domains=self.exclude_domains,
@@ -140,7 +138,7 @@ class ExaWebSearch:
         response.raise_for_status()
         return response
 
-    @component.output_types(documents=list[Document], links=list[str], deep_output=dict[str, Any] | None)
+    @component.output_types(documents=List[Document], links=List[str], deep_output=Optional[Dict[str, Any]])
     def run(self, query: str) -> dict[str, list[Document] | list[str] | dict[str, Any] | None]:
         headers = {
             "x-api-key": self.api_key.resolve_value(),
@@ -150,7 +148,6 @@ class ExaWebSearch:
         payload: dict[str, Any] = {
             "query": query,
             "numResults": self.num_results,
-            "useAutoprompt": self.use_autoprompt,
             "type": self.type,
         }
         if self.include_domains:

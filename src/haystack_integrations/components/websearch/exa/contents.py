@@ -39,6 +39,7 @@ class ExaContents:
         summary: bool | dict[str, Any] | None = None,
         livecrawl: LivecrawlOption | None = None,
         livecrawl_timeout: int | None = None,
+        max_age_hours: int | None = None,
         filter_empty_results: bool | None = None,
         subpages: int | None = None,
         subpage_target: str | None = None,
@@ -51,6 +52,7 @@ class ExaContents:
         self.summary = summary
         self.livecrawl = livecrawl
         self.livecrawl_timeout = livecrawl_timeout
+        self.max_age_hours = max_age_hours
         self.filter_empty_results = filter_empty_results
         self.subpages = subpages
         self.subpage_target = subpage_target
@@ -66,6 +68,7 @@ class ExaContents:
             summary=self.summary,
             livecrawl=self.livecrawl,
             livecrawl_timeout=self.livecrawl_timeout,
+            max_age_hours=self.max_age_hours,
             filter_empty_results=self.filter_empty_results,
             subpages=self.subpages,
             subpage_target=self.subpage_target,
@@ -89,8 +92,8 @@ class ExaContents:
         response.raise_for_status()
         return response
 
-    @component.output_types(documents=list[Document])
-    def run(self, urls: list[str]) -> dict[str, list[Document]]:
+    @component.output_types(documents=list[Document], statuses=list[dict[str, Any]])
+    def run(self, urls: list[str]) -> dict[str, list[Document] | list[dict[str, Any]]]:
         headers = {
             "x-api-key": self.api_key.resolve_value(),
             "Content-Type": "application/json",
@@ -108,6 +111,8 @@ class ExaContents:
             payload["livecrawl"] = self.livecrawl
         if self.livecrawl_timeout:
             payload["livecrawlTimeout"] = self.livecrawl_timeout
+        if self.max_age_hours is not None:
+            payload["maxAgeHours"] = self.max_age_hours
         if self.filter_empty_results is not None:
             payload["filterEmptyResults"] = self.filter_empty_results
         if self.subpages:
@@ -160,7 +165,9 @@ class ExaContents:
             doc = Document(content=content, meta=meta)
             documents.append(doc)
 
+        statuses = data.get("statuses", [])
+
         logger.debug(
             "ExaContents returned {count} documents for {url_count} urls", count=len(documents), url_count=len(urls)
         )
-        return {"documents": documents}
+        return {"documents": documents, "statuses": statuses}

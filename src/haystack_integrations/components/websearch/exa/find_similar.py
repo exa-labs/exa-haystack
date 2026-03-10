@@ -18,7 +18,6 @@ Category = Literal[
     "company",
     "research paper",
     "news",
-    "pdf",
     "tweet",
     "personal site",
     "financial report",
@@ -62,6 +61,7 @@ class ExaFindSimilar:
         summary: bool | dict[str, Any] | None = None,
         livecrawl: LivecrawlOption | None = None,
         livecrawl_timeout: int | None = None,
+        max_age_hours: int | None = None,
     ):
         self.api_key = api_key
         self.num_results = num_results
@@ -81,6 +81,7 @@ class ExaFindSimilar:
         self.summary = summary
         self.livecrawl = livecrawl
         self.livecrawl_timeout = livecrawl_timeout
+        self.max_age_hours = max_age_hours
 
     def to_dict(self) -> dict[str, Any]:
         return default_to_dict(
@@ -103,6 +104,7 @@ class ExaFindSimilar:
             summary=self.summary,
             livecrawl=self.livecrawl,
             livecrawl_timeout=self.livecrawl_timeout,
+            max_age_hours=self.max_age_hours,
         )
 
     @classmethod
@@ -166,6 +168,8 @@ class ExaFindSimilar:
             contents["livecrawl"] = self.livecrawl
         if self.livecrawl_timeout:
             contents["livecrawlTimeout"] = self.livecrawl_timeout
+        if self.max_age_hours is not None:
+            contents["maxAgeHours"] = self.max_age_hours
         if contents:
             payload["contents"] = contents
 

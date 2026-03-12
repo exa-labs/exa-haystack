@@ -226,8 +226,10 @@ class ExaStreamAnswer:
                             break
                         try:
                             data = json_module.loads(data_str)
-                            if "text" in data:
-                                yield data["text"]
+                            # API returns OpenAI-compatible SSE: choices[].delta.content
+                            choices = data.get("choices")
+                            if choices and choices[0].get("delta", {}).get("content"):
+                                yield choices[0]["delta"]["content"]
                             if "citations" in data:
                                 for result in data["citations"]:
                                     meta: dict[str, Any] = {
